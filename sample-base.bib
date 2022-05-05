@@ -1,0 +1,304 @@
+% Use this file for citations not found in the ACL Anthology (contained in "anthology.bib").
+@inproceedings{casanueva-etal-2020-efficient,
+    title = "Efficient Intent Detection with Dual Sentence Encoders",
+    author = "Casanueva, I{\~n}igo  and
+      Tem{\v{c}}inas, Tadas  and
+      Gerz, Daniela  and
+      Henderson, Matthew  and
+      Vuli{\'c}, Ivan",
+    booktitle = "Proceedings of the 2nd Workshop on Natural Language Processing for Conversational AI",
+    month = jul,
+    year = "2020",
+    address = "Online",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2020.nlp4convai-1.5",
+    doi = "10.18653/v1/2020.nlp4convai-1.5",
+    pages = "38--45",
+    abstract = "Building conversational systems in new domains and with added functionality requires resource-efficient models that work under low-data regimes (i.e., in few-shot setups). Motivated by these requirements, we introduce intent detection methods backed by pretrained dual sentence encoders such as USE and ConveRT. We demonstrate the usefulness and wide applicability of the proposed intent detectors, showing that: 1) they outperform intent detectors based on fine-tuning the full BERT-Large model or using BERT as a fixed black-box encoder on three diverse intent detection data sets; 2) the gains are especially pronounced in few-shot setups (i.e., with only 10 or 30 annotated examples per intent); 3) our intent detectors can be trained in a matter of minutes on a single CPU; and 4) they are stable across different hyperparameter settings. In hope of facilitating and democratizing research focused on intention detection, we release our code, as well as a new challenging single-domain intent detection dataset comprising 13,083 annotated examples over 77 intents.",
+}
+
+@article{larson2019evaluation,
+  title={An evaluation dataset for intent classification and out-of-scope prediction},
+  author={Larson, Stefan and Mahendran, Anish and Peper, Joseph J and Clarke, Christopher and Lee, Andrew and Hill, Parker and Kummerfeld, Jonathan K and Leach, Kevin and Laurenzano, Michael A and Tang, Lingjia and others},
+  journal={arXiv preprint arXiv:1909.02027},
+  year={2019}
+}
+
+@inproceedings{vulic-etal-2021-convfit,
+    title = "{ConvFiT:} {C}onversational Fine-Tuning of Pretrained Language Models",
+    author = "Vuli{\'c}, Ivan  and
+      Su, Pei-Hao  and
+      Coope, Samuel  and
+      Gerz, Daniela  and
+      Budzianowski, Pawe{\l}  and
+      Casanueva, I{\~n}igo  and
+      Mrk{\v{s}}i{\'c}, Nikola  and
+      Wen, Tsung-Hsien",
+    booktitle = "Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing",
+    month = nov,
+    year = "2021",
+    address = "Online and Punta Cana, Dominican Republic",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2021.emnlp-main.88",
+    doi = "10.18653/v1/2021.emnlp-main.88",
+    pages = "1151--1168",
+    abstract = "Transformer-based language models (LMs) pretrained on large text collections are proven to store a wealth of semantic knowledge. However, 1) they are not effective as sentence encoders when used off-the-shelf, and 2) thus typically lag behind conversationally pretrained (e.g., via response selection) encoders on conversational tasks such as intent detection (ID). In this work, we propose ConvFiT, a simple and efficient two-stage procedure which turns any pretrained LM into a universal conversational encoder (after Stage 1 ConvFiT-ing) and task-specialised sentence encoder (after Stage 2). We demonstrate that 1) full-blown conversational pretraining is not required, and that LMs can be quickly transformed into effective conversational encoders with much smaller amounts of unannotated data; 2) pretrained LMs can be fine-tuned into task-specialised sentence encoders, optimised for the fine-grained semantics of a particular task. Consequently, such specialised sentence encoders allow for treating ID as a simple semantic similarity task based on interpretable nearest neighbours retrieval. We validate the robustness and versatility of the ConvFiT framework with such similarity-based inference on the standard ID evaluation sets: ConvFiT-ed LMs achieve state-of-the-art ID performance across the board, with particular gains in the most challenging, few-shot setups.",
+}
+@article{devlin2018bert,
+  title={Bert: Pre-training of deep bidirectional transformers for language understanding},
+  author={Devlin, Jacob and Chang, Ming-Wei and Lee, Kenton and Toutanova, Kristina},
+  journal={arXiv preprint arXiv:1810.04805},
+  year={2018}
+}
+@article{liu2019roberta,
+  title={Roberta: A robustly optimized bert pretraining approach},
+  author={Liu, Yinhan and Ott, Myle and Goyal, Naman and Du, Jingfei and Joshi, Mandar and Chen, Danqi and Levy, Omer and Lewis, Mike and Zettlemoyer, Luke and Stoyanov, Veselin},
+  journal={arXiv preprint arXiv:1907.11692},
+  year={2019}
+}
+@article{henderson2019training,
+  title={Training neural response selection for task-oriented dialogue systems},
+  author={Henderson, Matthew and Vuli{\'c}, Ivan and Gerz, Daniela and Casanueva, I{\~n}igo and Budzianowski, Pawe{\l} and Coope, Sam and Spithourakis, Georgios and Wen, Tsung-Hsien and Mrk{\v{s}}i{\'c}, Nikola and Su, Pei-Hao},
+  journal={arXiv preprint arXiv:1906.01543},
+  year={2019}
+}
+
+@inproceedings{reimers-2019-sentence-bert,
+  title = "Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks",
+  author = "Reimers, Nils and Gurevych, Iryna",
+  booktitle = "Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing",
+  month = "11",
+  year = "2019",
+  publisher = "Association for Computational Linguistics",
+  url = "https://arxiv.org/abs/1908.10084",
+}
+
+@article{cer2018universal,
+  title={Universal sentence encoder},
+  author={Cer, Daniel and Yang, Yinfei and Kong, Sheng-yi and Hua, Nan and Limtiaco, Nicole and John, Rhomni St and Constant, Noah and Guajardo-C{\'e}spedes, Mario and Yuan, Steve and Tar, Chris and others},
+  journal={arXiv preprint arXiv:1803.11175},
+  year={2018}
+}
+
+@article{bowman2015large,
+  title={A large annotated corpus for learning natural language inference},
+  author={Bowman, Samuel R and Angeli, Gabor and Potts, Christopher and Manning, Christopher D},
+  journal={arXiv preprint arXiv:1508.05326},
+  year={2015}
+}
+
+@inproceedings{yang-etal-2018-learning,
+    title = "Learning Semantic Textual Similarity from Conversations",
+    author = "Yang, Yinfei  and
+      Yuan, Steve  and
+      Cer, Daniel  and
+      Kong, Sheng-yi  and
+      Constant, Noah  and
+      Pilar, Petr  and
+      Ge, Heming  and
+      Sung, Yun-Hsuan  and
+      Strope, Brian  and
+      Kurzweil, Ray",
+    booktitle = "Proceedings of The Third Workshop on Representation Learning for {NLP}",
+    month = jul,
+    year = "2018",
+    address = "Melbourne, Australia",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/W18-3022",
+    doi = "10.18653/v1/W18-3022",
+    pages = "164--174",
+    abstract = "We present a novel approach to learn representations for sentence-level semantic similarity using conversational data. Our method trains an unsupervised model to predict conversational responses. The resulting sentence embeddings perform well on the Semantic Textual Similarity (STS) Benchmark and SemEval 2017{'}s Community Question Answering (CQA) question similarity subtask. Performance is further improved by introducing multitask training, combining conversational response prediction and natural language inference. Extensive experiments show the proposed model achieves the best performance among all neural models on the STS Benchmark and is competitive with the state-of-the-art feature engineered and mixed systems for both tasks.",
+}
+
+@article{gao2021simcse,
+  title={SimCSE: Simple Contrastive Learning of Sentence Embeddings},
+  author={Gao, Tianyu and Yao, Xingcheng and Chen, Danqi},
+  journal={arXiv preprint arXiv:2104.08821},
+  year={2021}
+}
+
+@article{MehriDialoGLUE2020,
+  title={DialoGLUE: A Natural Language Understanding Benchmark for Task-Oriented Dialogue},
+  author={S. Mehri and M. Eric and D. Hakkani-Tur},
+  journal={ArXiv},
+  year={2020},
+  volume={abs/2009.13570}
+}
+@inproceedings{larson-etal-2019-evaluation,
+    title = "An Evaluation Dataset for Intent Classification and Out-of-Scope Prediction",
+    author = "Larson, Stefan  and
+      Mahendran, Anish  and
+      Peper, Joseph J.  and
+      Clarke, Christopher  and
+      Lee, Andrew  and
+      Hill, Parker  and
+      Kummerfeld, Jonathan K.  and
+      Leach, Kevin  and
+      Laurenzano, Michael A.  and
+      Tang, Lingjia  and
+      Mars, Jason",
+    booktitle = "Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)",
+    year = "2019",
+    url = "https://www.aclweb.org/anthology/D19-1131"
+}
+
+@misc{liu2019benchmarking,
+  title={Benchmarking natural language understanding services for building conversational agents},
+  author={Liu, Xingkun and Eshghi, Arash and Swietojanski, Pawel and Rieser, Verena},
+  year={2019}
+}
+
+@inproceedings{zhang-etal-2020-discriminative,
+    title = "Discriminative Nearest Neighbor Few-Shot Intent Detection by Transferring Natural Language Inference",
+    author = "Zhang, Jianguo  and
+      Hashimoto, Kazuma  and
+      Liu, Wenhao  and
+      Wu, Chien-Sheng  and
+      Wan, Yao  and
+      Yu, Philip  and
+      Socher, Richard  and
+      Xiong, Caiming",
+    booktitle = "Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)",
+    month = nov,
+    year = "2020",
+    address = "Online",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2020.emnlp-main.411",
+    doi = "10.18653/v1/2020.emnlp-main.411",
+    pages = "5064--5082",
+    abstract = "Intent detection is one of the core components of goal-oriented dialog systems, and detecting out-of-scope (OOS) intents is also a practically important skill. Few-shot learning is attracting much attention to mitigate data scarcity, but OOS detection becomes even more challenging. In this paper, we present a simple yet effective approach, discriminative nearest neighbor classification with deep self-attention. Unlike softmax classifiers, we leverage BERT-style pairwise encoding to train a binary classifier that estimates the best matched training example for a user input. We propose to boost the discriminative ability by transferring a natural language inference (NLI) model. Our extensive experiments on a large-scale multi-domain intent detection task show that our method achieves more stable and accurate in-domain and OOS detection accuracy than RoBERTa-based classifiers and embedding-based nearest neighbor approaches. More notably, the NLI transfer enables our 10-shot model to perform competitively with 50-shot or even full-shot classifiers, while we can keep the inference time constant by leveraging a faster embedding retrieval model.",
+}
+
+@inproceedings{zhang-etal-2021-shot,
+    title = "Few-Shot Intent Detection via Contrastive Pre-Training and Fine-Tuning",
+    author = "Zhang, Jianguo  and
+      Bui, Trung  and
+      Yoon, Seunghyun  and
+      Chen, Xiang  and
+      Liu, Zhiwei  and
+      Xia, Congying  and
+      Tran, Quan Hung  and
+      Chang, Walter  and
+      Yu, Philip",
+    booktitle = "Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing",
+    month = nov,
+    year = "2021",
+    address = "Online and Punta Cana, Dominican Republic",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2021.emnlp-main.144",
+    doi = "10.18653/v1/2021.emnlp-main.144",
+    pages = "1906--1912",
+    abstract = "In this work, we focus on a more challenging few-shot intent detection scenario where many intents are fine-grained and semantically similar. We present a simple yet effective few-shot intent detection schema via contrastive pre-training and fine-tuning. Specifically, we first conduct self-supervised contrastive pre-training on collected intent datasets, which implicitly learns to discriminate semantically similar utterances without using any labels. We then perform few-shot intent detection together with supervised contrastive learning, which explicitly pulls utterances from the same intent closer and pushes utterances across different intents farther. Experimental results show that our proposed method achieves state-of-the-art performance on three challenging intent detection datasets under 5-shot and 10-shot settings.",
+}
+
+
+@inproceedings{henderson-etal-2020-convert,
+    title = "{C}onve{RT}: Efficient and Accurate Conversational Representations from Transformers",
+    author = "Henderson, Matthew  and
+      Casanueva, I{\~n}igo  and
+      Mrk{\v{s}}i{\'c}, Nikola  and
+      Su, Pei-Hao  and
+      Wen, Tsung-Hsien  and
+      Vuli{\'c}, Ivan",
+    booktitle = "Findings of the Association for Computational Linguistics: EMNLP 2020",
+    month = nov,
+    year = "2020",
+    address = "Online",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2020.findings-emnlp.196",
+    doi = "10.18653/v1/2020.findings-emnlp.196",
+    pages = "2161--2174",
+    abstract = "General-purpose pretrained sentence encoders such as BERT are not ideal for real-world conversational AI applications; they are computationally heavy, slow, and expensive to train. We propose ConveRT (Conversational Representations from Transformers), a pretraining framework for conversational tasks satisfying all the following requirements: it is effective, affordable, and quick to train. We pretrain using a retrieval-based response selection task, effectively leveraging quantization and subword-level parameterization in the dual encoder to build a lightweight memory- and energy-efficient model. We show that ConveRT achieves state-of-the-art performance across widely established response selection tasks. We also demonstrate that the use of extended dialog history as context yields further performance gains. Finally, we show that pretrained representations from the proposed encoder can be transferred to the intent classification task, yielding strong results across three diverse data sets. ConveRT trains substantially faster than standard sentence encoders or previous state-of-the-art dual encoders. With its reduced size and superior performance, we believe this model promises wider portability and scalability for Conversational AI applications.",
+}
+
+@inproceedings{vaswani2017attention,
+  title={Attention is all you need},
+  author={Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N and Kaiser, {\L}ukasz and Polosukhin, Illia},
+  booktitle={Advances in neural information processing systems},
+  pages={5998--6008},
+  year={2017}
+}
+
+@article{wolf2019transfertransfo,
+  title={Transfertransfo: A transfer learning approach for neural network based conversational agents},
+  author={Wolf, Thomas and Sanh, Victor and Chaumond, Julien and Delangue, Clement},
+  journal={arXiv preprint arXiv:1901.08149},
+  year={2019}
+}
+
+@article{thakur-2020-AugSBERT,
+    title = "Augmented SBERT: Data Augmentation Method for Improving Bi-Encoders for Pairwise Sentence Scoring Tasks",
+    author = "Thakur, Nandan and Reimers, Nils and Daxenberger, Johannes and  Gurevych, Iryna", 
+    journal= "arXiv preprint arXiv:2010.08240",
+    month = "10",
+    year = "2020",
+    url = "https://arxiv.org/abs/2010.08240",
+}
+
+@INPROCEEDINGS{1640964,
+  author={Hadsell, R. and Chopra, S. and LeCun, Y.},
+  booktitle={2006 IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR'06)}, 
+  title={Dimensionality Reduction by Learning an Invariant Mapping}, 
+  year={2006},
+  volume={2},
+  number={},
+  pages={1735-1742},
+  doi={10.1109/CVPR.2006.100}}
+  
+ @article{wu2020clear,
+  title={Clear: Contrastive learning for sentence representation},
+  author={Wu, Zhuofeng and Wang, Sinong and Gu, Jiatao and Khabsa, Madian and Sun, Fei and Ma, Hao},
+  journal={arXiv preprint arXiv:2012.15466},
+  year={2020}
+}
+  
+@inproceedings{mehri-eric-2021-example,
+    title = "Example-Driven Intent Prediction with Observers",
+    author = "Mehri, Shikib  and
+      Eric, Mihail",
+    booktitle = "Proceedings of the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies",
+    month = jun,
+    year = "2021",
+    address = "Online",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2021.naacl-main.237",
+    doi = "10.18653/v1/2021.naacl-main.237",
+    pages = "2979--2992",
+    abstract = "A key challenge of dialog systems research is to effectively and efficiently adapt to new domains. A scalable paradigm for adaptation necessitates the development of generalizable models that perform well in few-shot settings. In this paper, we focus on the intent classification problem which aims to identify user intents given utterances addressed to the dialog system. We propose two approaches for improving the generalizability of utterance classification models: (1) observers and (2) example-driven training. Prior work has shown that BERT-like models tend to attribute a significant amount of attention to the [CLS] token, which we hypothesize results in diluted representations. Observers are tokens that are not attended to, and are an alternative to the [CLS] token as a semantic representation of utterances. Example-driven training learns to classify utterances by comparing to examples, thereby using the underlying encoder as a sentence similarity model. These methods are complementary; improving the representation through observers allows the example-driven model to better measure sentence similarities. When combined, the proposed methods attain state-of-the-art results on three intent prediction datasets (banking77, clinc150, hwu64) in both the full data and few-shot (10 examples per intent) settings. Furthermore, we demonstrate that the proposed approach can transfer to new intents and across datasets without any additional training.",
+}
+
+@article{zhang2020recent,
+  title={Recent advances and challenges in task-oriented dialog systems},
+  author={Zhang, Zheng and Takanobu, Ryuichi and Zhu, Qi and Huang, MinLie and Zhu, XiaoYan},
+  journal={Science China Technological Sciences},
+  pages={1--17},
+  year={2020},
+  publisher={Springer}
+}
+
+@ARTICLE{intent_classification_for_dialogue_uterances,
+  author={Schuurmans, Jetze and Frasincar, Flavius},
+  journal={IEEE Intelligent Systems}, 
+  title={Intent Classification for Dialogue Utterances}, 
+  year={2020},
+  volume={35},
+  number={1},
+  pages={82-88},
+  doi={10.1109/MIS.2019.2954966}}
+  
+@inproceedings{thakur-etal-2021-augmented,
+    title = "Augmented {SBERT}: Data Augmentation Method for Improving Bi-Encoders for Pairwise Sentence Scoring Tasks",
+    author = "Thakur, Nandan  and
+      Reimers, Nils  and
+      Daxenberger, Johannes  and
+      Gurevych, Iryna",
+    booktitle = "Proceedings of the 2021 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies",
+    month = jun,
+    year = "2021",
+    address = "Online",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2021.naacl-main.28",
+    doi = "10.18653/v1/2021.naacl-main.28",
+    pages = "296--310",
+    abstract = "There are two approaches for pairwise sentence scoring: Cross-encoders, which perform full-attention over the input pair, and Bi-encoders, which map each input independently to a dense vector space. While cross-encoders often achieve higher performance, they are too slow for many practical use cases. Bi-encoders, on the other hand, require substantial training data and fine-tuning over the target task to achieve competitive performance. We present a simple yet efficient data augmentation strategy called Augmented SBERT, where we use the cross-encoder to label a larger set of input pairs to augment the training data for the bi-encoder. We show that, in this process, selecting the sentence pairs is non-trivial and crucial for the success of the method. We evaluate our approach on multiple tasks (in-domain) as well as on a domain adaptation task. Augmented SBERT achieves an improvement of up to 6 points for in-domain and of up to 37 points for domain adaptation tasks compared to the original bi-encoder performance.",
+}
