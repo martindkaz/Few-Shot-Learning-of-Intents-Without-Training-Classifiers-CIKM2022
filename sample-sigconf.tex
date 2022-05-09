@@ -243,7 +243,7 @@ Our contribution is to provide evidence suggesting that ELMs make it possible to
 \end{figure*}
 
 
-\section{A Deployed ELM-based Approach}
+\section{Deployed ELM-based Approach}
 We developed and deployed an ELM-based dialogue system for the helpdesk operations at Intact Financial Corp., the largest provider of property and casualty insurance in Canada and a leading provider of global specialty insurance. Our custom approach was motivated by the desire to train a single domain-specific language model for embeddings so they after be used not only for resolving intents, but also for topic detection, clustering, and other NLP tasks. Another motivation was to get started with as little as a single or a few examples per intent. The ELM-based intent resolver powers a chatbot that has served over 53K conversations since its deployment a year ago.
 
 \subsection{Overview of the Dialogue System}
@@ -266,36 +266,37 @@ We use SBERT\footnote{\url{https://github.com/UKPLab/sentence-transformers}} \ci
 
 \subsection{ELM Fine-tuning}
 \label{ELMFineTuning}
-SBERT provides a variety of network architectures and loss functions for fine-tuning. We use the supervised form with pairs of sentences that are scored for their similarity, e.g. on a scale 0 to 1, using SBERT's Siamese network architecture. 
+SBERT provides a variety of network architectures and loss functions for fine-tuning. We use the Siamese network architecture and supervised training with pairs of sentences that are scored for their similarity, e.g. on a scale 0 to 1.
 
-The intent tree is used to automatically generate the fine-tuning pairs. Starting from a leaf node, positive similarity pairs are created by pairing its final intent examples with the superset description of its parent, then with its grandparent, and so on up until the root. An example for positive pairs for "reset password" is shown visually in Figure 1 and the exact pairs are listed in Appendix \ref{sec:posNegPairsExamples}. In summary, they create positive associations from the root towards the leaf node. As for negative similarity pairs, they are created by pairing the final intent examples of a leaf node with the superset descriptions of the siblings of its parent, then with the siblings of its grandparent, and so on as Figure 1 and Appendix \ref{sec:posNegPairsExamples} show in more details. These negative associations try to keep the intent inference along the correct ancestry path. 
+The intent tree is used to automatically generate the fine-tuning pairs. Starting from a leaf node, i.e. a final intent, positive similarity pairs are created by pairing its examples with the superset description of its parent, then with its grandparent, and so on up until the root. An example for positive pairs for "reset password" is shown visually in Figure 1 and the exact pairs are listed in Appendix \ref{sec:posNegPairsExamples}. In summary, this creates positive associations from the root towards the leaf node. Negative similarity pairs are created by pairing the examples of a final intent leaf node with the superset descriptions of the siblings of its parent, then with the siblings of its grandparent, and so on as Figure 1 and Appendix \ref{sec:posNegPairsExamples} show in more details. These negative associations try to keep the intent inference along the correct ancestry path. 
 
-For the similarity scores of the pairs created above, The Company uses an approach inspired by a data-augmentation process by the SBERT team \cite{thakur-2020-AugSBERT} where a newly added pair is scored for similarity by an auxiliary model optimized to output similarity scores directly. SBERT provides such auxiliary models off-the-self. The Company's particular approach introduces a parameter $\theta$ that allows it to combine information from the tree structure. 
+For the similarity scores of the pairs created above, we use an approach inspired by a data-augmentation process from the SBERT team \cite{thakur-2020-AugSBERT}, where a newly added pair is scored for similarity by an auxiliary model which, instead of outputting embedding vectors, is optimized to output similarity scores. SBERT provides such auxiliary models off-the-self. Our particular approach introduces a parameter $\theta$ that can control how knowledge is combined between the auxiliary model and the tree structure. 
 
-Taking an auxiliary model (AUX), the similarity scores for a positive pair $\math(p1, p2)$ are set as $\max(\theta, AUX(p1, p2))$, and for a negative pair $\math(n1, n2)$ as $\min(1-\theta, AUX(n1, n2)$. The choice for $\theta$ is discussed below. One reason for these formulas is to offer flexibility during learning through uncertainty, compared to fixing positive scores to 1 and negative ones to 0. Another reason is to take advantage of any good confidence the scoring model AUX might already have when it's downloaded. For example, if we use $\theta$ of 0.7, and if AUX measures a positive pair $\math(p1, p2)$ as well under 0.7 we want to up that score to $\theta$; and if AUX sees $\math(p1, p2)$ as well over 0.7 we don't want to worsen a good prior knowledge by lowering it to $\theta$. Thus, $\theta$ can be seen as a cutoff for transfer of confirming knowledge from AUX, as well as how much new knowledge is asserted when it does not confirm a label.  
+Taking an auxiliary model (AUX), the similarity scores for a positive pair $\math(p1, p2)$ are set as $\max(\theta, AUX(p1, p2))$, and for a negative pair $\math(n1, n2)$ as $\min(1-\theta, AUX(n1, n2)$. The choice for $\theta$ is discussed below. One reason for these formulas is to offer flexibility during learning through uncertainty, compared to fixing positive scores to 1 and negative ones to 0. Another reason is to take advantage of any good confidence the scoring model AUX might already have when it's downloaded. For example, if we use $\theta$ of 0.7, and if AUX measures a positive pair $\math(p1, p2)$ below 0.7, i.e. AUX does not have good a priori knowledge for this positive pair, we set the score to $\theta$; but if AUX measures $\math(p1, p2)$ above 0.7 we keep the AUX score, since we don't want to worsen a good a priori knowledge by lowering it to $\theta$. Thus, $\theta$ can be seen as a cutoff for transfer of confirming knowledge from AUX, as well as how much new knowledge is asserted when it does not confirm a label.  
 
-The parameter $\theta$ can vary from 0.5 to 1. At the upper extreme of 1, it will ignore any ELM knowledge. At the lower extreme of 0.5, if the ELM measures a positive pair as negative, the pre-trained ELM knowledge is given as much weight as the fine-tunning data and the label is set to denote complete uncertainty. The Company has empirically chosen 0.7 for $\theta$. Our parameter sensitivity testing (see Table \ref{tab: theta-variation} in Appendix \ref{sec:thetaImpact}) approximately confirms this and we use the same setting. 
+The parameter $\theta$ can vary from 0.5 to 1. At the upper extreme of 1, it will ignore any knowledge from the AUX model. At the lower extreme of 0.5, if AUX measures a positive pair as negative, AUX is given as much weight as the fine-tunning data and the label is set to denote complete uncertainty. We have empirically chosen 0.7 for $\theta$ based on parameter sensitivity testing shown in Table \ref{tab: theta-variation} in Appendix \ref{sec:thetaImpact}). 
 
-Using the above approach, The Company has found fine-tuning to be a straightforward process, without much sensitivity to learning rates, batch sizes, or number of epochs, as detailed below. Generally, their fine-tuning converges within a few epochs. Our evaluations below suggest the same.
+>>>>>>>>> TO ADD/REVISE ABOVE AFTER WEI's EXPERIMENTS WITH A VALIDATION SET
+
+
+Using the above approach, we have found that fine-tuning is a straightforward process, without much sensitivity to learning rates, batch sizes, or number of epochs, as shown further below. Generally, the fine-tuning converges within a few epochs. 
 
 \subsection{New Intents and Out-of-scope Function}
-The automated nature of this fine-tuning pairs creation and scoring lets chatbot admins add a new intent simply by visually creating a new leaf node, or visually change the tree structure on the fly.  
+The automated nature of this fine-tuning pairs creation and scoring lets domain admins add new intents simply by visually creating a new leaf node, or visually changing the tree structure on the fly.  
 
-With the ELM approach flexibility, The Company also developed a custom out-of-scope function. It measures the distance of a user input to cluster centres of intent supersets and compares this to the average inter-superset distance. In other words, it tries to estimate if the input is outside the manifold of the domain. If an input is much further compared to inter-density, it is considered as an out-of-scope request. The Company has also found that a simpler out-of-scope function can be made just by creating an intent whose examples are picked solely on the quality of being far outside the domain. Multiple out-of-scope functions can be used across different branching points in the intent tree. 
-
-\subsection{Knowledge sharing with other NLP tasks} The ELM fine-tuned on The Company's Helpdesk data ends up being useful for more than just chatbot intents. The same ELM is reused for detecting topics in documents, finding clusters in text collections, advanced text search functions, and other projects on The Company's roadmap.  
+Taking advantage of the flexibility of the ELM approach, we also developed a custom out-of-scope function. It measures the distance of a user input to cluster centroids of intent supersets and then compares these distances to the average inter-superset distance. In other words, it tries to estimate if the input is outside the manifold of the domain. If an input is much further compared to the inter-density, it is considered as an out-of-scope request. We have also found that a simpler out-of-scope function can be made just by creating an intent whose examples are picked solely on the quality of being far outside the domain. Multiple out-of-scope functions can be used across different branches of the intent tree. 
 
 
 \section{Evaluation}
-We begin with public ELMs, already pre-trained for general use, and use them without any fine-tuning. Then we experiment with how much fine-tuning is need to approach state-of-the-art performance. The code for this paper is made publicly available. 
+We evaluate first with public ELMs, which are already pre-trained for general use and can be used without any fine-tuning. Then we experiment with how much fine-tuning is need to approach state-of-the-art performance. The code for this paper is made publicly available. 
 
-We vary some design choices in The Company's SBERT+NN (nearest-neighbour) method while remaining under the ELM+Dist approach. For one, we try averaging all the embeddings under an intent to get a single-vector representation of the intent. Then we can compare user inputs to this average instead of calculating a nearest neighbour function across multiple examples. We will refer to this as SBERT+AveSE. This version makes the inference time of an ELM+Dist approach proportional to number of intents instead of proportional to the total number of examples.  
+All the variations of our approach use a general form of an ELM together with some distance function. We will refer to this as the ELM+Dist approach. We vary some design choices in terms of the ELM and the distance function. In one variation we calculate the cosine distance between the user input and each example of a final intent, and then use nearest-neighbour as a representative measure for that intent. When the ELM is based on SBERT for example, we will label this variation as SBERT+NN. Another variation calculates the average of all the embeddings under an intent to get a single-vector representation. Then we can compare a user input to this average instead of the multiple calculation required with nearest-neighbour. We will refer to this as SBERT+AveSE. The latter variation makes the inference time proportional to number of intents instead of proportional to the total number of examples.  
 
 We also replace SBERT as an ELM framework with SimCSE\footnote{\url{https://github.com/princeton-nlp/SimCSE}} \citep{gao2021simcse}, giving us SimCSE+NN and SimCSE+AveSE. SBERT and SimCSE use very different datasets (See Appendix \ref{sec:ELMpreTrainingDatasets}) for their pre-trained ELMs, making the ELMs quite different. Also, the way SimCSE fine-tunes its ELM is different from how we fine-tune with SBERT. Unlike %The Company's 
 the method in Section \ref{ELMFineTuning} where a similarity score is required for a fine-tuning pair, SimCSE does not require a similarity score due to its contrastive loss function \citep{gao2021simcse}. 
 
-\subsection{\textbf{Evaluation Datasets and Models}} 
-We evaluate on three public datasets and on The Company's dataset, described in Table \ref{tab:freq}. The public datasets are taken from the DialoGLUE benchmark \cite{MehriDialoGLUE2020}: CLINC150 \citep{larson-etal-2019-evaluation}, BANKING77 \citep{casanueva-etal-2020-efficient}, and HWU64 \citep{liu2019benchmarking}.  
+\subsection{\textbf{Evaluation Datasets}} 
+We evaluate on three public datasets and on Intact's helpdesk dataset, as described in Table \ref{tab:freq}. The public datasets are taken from the DialoGLUE benchmark \cite{MehriDialoGLUE2020}: CLINC150 \citep{larson-etal-2019-evaluation}, BANKING77 \citep{casanueva-etal-2020-efficient}, and HWU64 \citep{liu2019benchmarking}.  
 
 \begin{table}[h]
 \setlength\tabcolsep{9} % let LaTeX compute intercolumn whitespace
@@ -312,9 +313,13 @@ The Company & 33 & 186 & 1 \\
 \label{tab:freq}
 \end{table}
  
-Each dataset has a fixed split for training and testing data. For the public datasets, the same split is used as with previous methods compared on the benchmark. For The Company's dataset, 99 examples are used for testing, leaving only 87 examples for fine-tuning. Nevertheless, due to how examples are combined into positive and negative pairs, the number of fine-tuning pairs is 6427. Tables \ref{tab:NumTrainTest} and \ref{tab:NumFineTuning} in Appendix \ref{sec:noExamples} lists the numbers of training, test and fine-tuning examples for the public datasets. 
+Each dataset has a fixed split for training and testing data. 
 
-The 186 intent examples listed for The Company's dataset in Table \ref{tab:freq} are all associated to final intents, i.e. to leaf nodes in The Company's intent tree. The tree also has 5 non-leaf nodes that contain 21 superset descriptions that additionally combine into fine-tuning pairs with the 87 fine-tuning examples, as described in Section 2. One evaluation setup for The Company's data considers all possible combinations made possible by the intent tree. 
+>>>>>> ? VALIDATION DATASET?
+
+For the public datasets, the same split is used as with previous methods compared on that benchmark. For Intact's dataset, 99 examples are used for testing, leaving only 87 examples for fine-tuning. Nevertheless, due to how examples are combined into positive and negative pairs, the number of fine-tuning pairs is 6427. Tables \ref{tab:NumTrainTest} and \ref{tab:NumFineTuning} in Appendix \ref{sec:noExamples} lists the numbers of training, test and fine-tuning examples for the public datasets. 
+
+The 186 intent examples listed for Intact's dataset in Table \ref{tab:freq} are all associated to final intents, i.e. to leaf nodes in Intact's intent tree. The tree also has 5 non-leaf nodes that contain 21 superset descriptions that additionally combine into fine-tuning pairs with the 87 fine-tuning examples, as described in Section 2. One evaluation setup for Intact's data considers all combinations made possible by the intent tree. 
 
 \begin{table}[b]
 \setlength\tabcolsep{9} % let LaTeX compute intercolumn whitespace
@@ -339,7 +344,7 @@ SimCSE+AveSE after fine-tuning & 72.73 & 60.61  \\
 \label{tab:accuracyIntact}
 \end{table}
 
-Since the public datasets do not have an intent tree, a second setup evaluates The Company's data on a flat version where the non-leaf information (i.e. the tree) is ignored and only the 87 fine-tuning examples are used. In this flat setup, fine-tuning pairs are created in the same way like for the public datasets. For positive pairs, an intent example is paired in permutations with all other examples from the same intent. For negative pairs, an intent example is paired in permutation with examples from different intents. 
+Since the public datasets do not have an intent tree, a second evaluation setup evaluates Intact's data on a flat version where the non-leaf information (i.e. the tree) is ignored and only the 87 fine-tuning examples are used. In this flat setup, fine-tuning pairs are created in the same way like for the public datasets: for positive pairs, an intent example is paired in permutations with all other examples from the same intent. For negative pairs, an intent example is paired in permutation with examples from different intents. 
 
 Since the related previous methods evaluate on 5-shot, 10-shot, or both, we do both when we apply our ELM+Dist methods to the benchmark datasets. We follow the benchmark guidelines as to which 5 or 10 examples to use per intent. 
 
@@ -379,7 +384,7 @@ Since the related previous methods evaluate on 5-shot, 10-shot, or both, we do b
 
 \subsection{\textbf{Setup of Experiments}}
 
-For SBERT, we use their all-mpnet-base-v2 as the ELM and stsb-roberta-large as the auxiliary data-augmentation scoring model. The learning rate is kept at the default 2e-05. Batch sizes were 128 for the CLINC150 and HWU64 datasets, and 64 for BANKING77 due to GPU limitations and 64 for The Company's dataset due to its small size. Epochs were varied as noted below. For SimCSE, we started from their sup-simcse-roberta-large ELM, and used their default learning rate of 5e-05 and a batch size of 32. One limitation to our work is that we do not consider more ELMs. Cosine similarity was used as the distance function in all cases. We used one GTX1080Ti GPU card, and the run time statistics are in Table \ref{tab:runtime} in Appendix \ref{sec:runtime}.
+For SBERT, we use their all-mpnet-base-v2 as the ELM and stsb-roberta-large as the auxiliary data-augmentation scoring model (AUX). The learning rate is kept at the default 2e-05. Batch sizes were 128 for the CLINC150 and HWU64 datasets, and 64 for BANKING77 due to GPU limitations and 64 for Intact's dataset due to its small size. Epochs were varied as noted below. For SimCSE, we started from their sup-simcse-roberta-large ELM, and used their default learning rate of 5e-05 and a batch size of 32. One limitation to our work is that we do not consider more ELMs. Cosine similarity was used as the distance function in all cases. We used one GTX1080Ti GPU card, and the run time statistics are in Table \ref{tab:runtime} in Appendix \ref{sec:runtime}.
  
 \subsection{\textbf{Results}}
 
@@ -397,10 +402,12 @@ Based on our evaluation results and The Company's experience, Transformer-based 
 
 The optional intent tree is made more feasible with the ELM+Dist approach, since a single model can be used for all branching decisions. We have shown some benefits of the intent tree such as additional interpretability, and the ability to create a better performing and less imbalanced set of fine-tuning pairs, because negative pairs do not have to be created with all other intents in the dataset but only with siblings along the ancestry path. However, a limitation of this work is that we don't evaluate the other benefits mentioned such as the malleability and out-of-scope handling.
 
+An ELM fine-tuned for a particular domain can be useful for more than just dialogue system intents. Intact uses the same ELMs for detecting topics in documents, finding clusters in text collections, and text search functions.
+
 Our future work is on using unsupervised training for ELMs, and zero-shot intent resolution by using rules to combine multiple resolved contexts. 
 
 \section{Ethical Considerations}
-The Company carefully reviewed the intent tree and all intent examples before using them for the evaluations in this paper, and made sure they do not contain any user identifiers, private information, or sensitive technical information. 
+We carefully reviewed the intent tree and all intent examples before using them for the evaluations in this paper, and made sure they do not contain any user identifiers, private information, or sensitive technical information. 
 
 In terms of bias, at least in terms of the distance function we think that an example-based classifier can be less susceptible to bias compared to classifier models because even a single outlier can get an equal representation during inference like any other example, as long as the distance function is something like 1-nearest-neighbour and does not aggregate like with an average. Nevertheless, the text embedding model that feeds the distance function could have easily picked up biases during its training from the pre-training datasets. 
 
