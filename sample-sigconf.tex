@@ -173,7 +173,7 @@
 %% The abstract is a short summary of the work to be presented in the
 %% article.
 \begin{abstract}
-We present an enterprise dialogue system and show that it is possible to meet and exceed state-of-the-art results in resolving conversation intents without training classifiers, in particular when there is only a few examples per intent or as little as one. By switching from classification models to manipulating text embedding spaces, intents are resolved through distance functions. Our results show that off-the-shelf embedding models can work reasonably well in production without fine-tuning, and that they fine-tune well as data becomes available. 
+We present an application of language-embedding models to intent detection for an enterprise dialogue system. We show that it is possible to meet and exceed state-of-the-art results in resolving conversation intents without training classifiers, in particular when there is only a few examples per intent or as little as one. By manipulating text embedding spaces, intents are resolved through semantic similarities between the user utterance and intent examples or intent superset descriptions. Our results show that off-the-shelf embedding models can work reasonably well in production without fine-tuning, and that they are relatively easy to fine-tune as data becomes available. 
 \end{abstract}
 
 %%
@@ -225,26 +225,29 @@ We present an enterprise dialogue system and show that it is possible to meet an
 \maketitle
 
 \section{Introduction}
-Task-oriented dialogue systems \cite{zhang2020recent}, such as chatbot and question-answering systems, allow users to interact with systems using natural language to solve particular tasks or get information. Their goal is to map user inputs into correct intents, which trigger predefined actions. 
+Task-oriented dialogue systems \cite{zhang2020recent}, such as chatbot and question-answering systems, allow users to interact with systems using natural language to solve particular tasks or get information. The goal of the system is to map user inputs into correct \textit{intents} which then trigger predefined actions. 
 
-The dominant method for predicting the intent in dialogue systems is to model one or multiple text classifiers \cite{intent_classification_for_dialogue_uterances}. Each classifier needs to be trained before the system can be used. This requires collecting enough labeled training data from subject matter experts or real user examples. To make changes after training, such as adding or deleting an intent, the classifiers need to be retrained. While the dominant method is still superior given enough data for a fixed set of intents, it is not capable of cold starts or on-the-fly changes. 
+The dominant method for predicting the intent in dialogue systems is to use text classifiers $\math{f(u)}$ which map the user input $\math{u}$ into a closed set of $\math{K}$ intents $\math{\{I_1, I_2,...I_K\}}$ \cite{intent_classification_for_dialogue_uterances}. Each classifier needs to be trained before the system can be used. This requires collecting enough labeled training data from subject matter experts or real user examples in the form of $\math{(u, I)}$ pairs of user inputs and intents. To make changes after training, such as adding or deleting an intent, the classifiers need to be retrained. 
 
-In this paper, we describe a different approach and our experience in developing an enterprise dialogue system in a helpdesk domain for an insurance company. Using embedding language models, we apply similarity-based intent classification that can compare the text embedding of the user input to that of each intent without needing to train a classifier. We show that this works well with as little as one and not more than few examples per intent. In addition, new examples or intents can be easily added without interrupting the production system.
+The constraints with the dominant method can be illustrated by imagining a new deployment where the intents $\math{\{I_1, I_2,...I_K\}}$ are known with minimal initial information such as a single example per intent or a short description. This would be sufficient for a human to start matching new user inputs to the intents. However, a classifier of the form $\math{f(u)=>\{I_1, I_2,...I_K\}}$ would typically need more data before it can be trained. Further, if a new intent $\math{I_{K+1}}$ needs to be added, the system needs to be stopped and $\math{f(u)}$ retrained to map into $\math{\{I_1, I_2,...I_K, I_{K+1}\}}$.
 
-The last few years have seen innovations in Transformer-based architectures specialized to produce effective text embeddings as their final output \citep{cer2018universal, reimers-2019-sentence-bert, gao2021simcse}. We will refer to these as embedding-optimized language models (ELMs). 
+An obvious alternative would be to use a semantic similarity function $\math{sim(u, I)}$ which can score the similarity between the user input $\math{u}$ and each intent, after which the most similar intent can be chosen. Such a function could be pre-trained on the language as a whole or text collections from narrower problem domains, and be usable even without requiring application-specific training data, unlike classifiers. As training data becomes available, the similarity function can be further optimized. Changing or adding intents can be done online, without disrupting the system. 
 
-Our contribution is to provide evidence suggesting that ELMs make it possible to meet and exceed state-of-the-art results in resolving conversation intents when there is only a few examples per intent or as little as one, and can do so without having to train classifiers. Even without fine-tuning, some off-the-shelf ELMs can work reasonably well for immediate use. We also present some interpretability and malleability benefits from using an optional intent tree which is particularly suited for an ELM approach. 
+Until recently, using similarity functions as above has been impractical. If the language model is called every time the $\math{sim(u, I)}$ function runs, the inference time would scale proportional to the total number of intent examples. In realistic dialogue systems, this would make the inference time hundreds or thousands of times longer than using a $\math{f(u)}$ classifier. A known alternative, instead of training language models to output similarity scores, is to train them to embed text into vector spaces where semantic similarity translates into geometric proximity. We will refer to these as embedding-optimized language models (ELMs). Using ELMs, the language model has to run only once to get the embedding of the user input $\math{u}$, after which the similarity function is a matrix operation with pre-computed intent embeddings. This results in inference time comparable to using classifiers. Nevertheless, previous ELM methods have not been shown to match the performance and scalability of classifiers as methods for intent resolution. 
+
+The last few years have seen innovations ELMS based on Transformer-based architectures specialized to produce effective text embeddings as their final output \citep{cer2018universal, reimers-2019-sentence-bert, gao2021simcse}. Our key research question is whether the latest ELMs can match classifiers as methods for intent resolution, thereby removing the classifier constraints described above. In other words, whether dialogue systems can gain the benefits of needing considerably less training data, especially for initial launches, and being able to change or add intents online without retraining interruptions, all of this without losing on performance and scalability. 
+
+In this paper, we provide evidence suggesting that the latest ELMs can outperform classifiers in few-shot learning scenarios where the number of examples per intent is 10 or less. Our results top the scores across leading benchmark datasets for few-shot learning. We also present a ELM-based production system in a large enterprise setting which operates with as little as one example per intent. We shows that even without any fine-tuning on training data, some off-the-shelf ELMs can work reasonably well for immediate use. We also present some interpretability and malleability benefits from using an optional intent tree structure which is particularly enabled by an ELM approach. 
 
 
-\begin{figure*}[ht]
-  \includegraphics[width=\textwidth]{pic/figure1.PNG}
-  \centering
-  \caption{Part of the intent tree related to the "reset password" final intent}
-\end{figure*}
+\begin{figure}[ht]
+  \includegraphics[width=\columnwidth]{pic/figure1.PNG}
+  \caption{Part of the intent tree related to the "reset password"}
+\end{figure}
 
 
 \section{Deployed ELM-based Approach}
-We developed and deployed an ELM-based dialogue system for the helpdesk operations at Intact Financial Corp., the largest provider of property and casualty insurance in Canada and a leading provider of global specialty insurance. Our custom approach was motivated by the desire to train a single domain-specific language model for embeddings so they after be used not only for resolving intents, but also for topic detection, clustering, and other NLP tasks. Another motivation was to get started with as little as a single or a few examples per intent. The ELM-based intent resolver powers a chatbot that has served over 53K conversations since its deployment a year ago.
+We developed and deployed an ELM-based dialogue system for the helpdesk operations at Intact Financial Corp., the largest provider of property and casualty insurance in Canada and a leading provider of global specialty insurance. While Intact also uses classifier-based dialogue systems, this ELM-based approach was motivated by the desire to train a single domain-specific language model for embeddings so they can be used not only for resolving intents, but also for topic detection, clustering, and other NLP tasks. Another motivation was to get started with as little as a single or a few examples per intent. The ELM-based intent resolver powers a chatbot that has served over 53K conversations since its deployment a year ago.
 
 \subsection{Overview of the Dialogue System}
 \label{chabotOverview}
@@ -252,37 +255,30 @@ The chatbot uses a custom dialogue state machine which can prompt the user for c
 
 The user is not necessarily aware of all the branching events, i.e. dialogue turns. If the user input contains enough information for a confident decision at every superset node along a path to a leaf node, the dialogue engine ends up returning the final action or final answer in one turn. If the engine is not confident at any superset node, it queries the user for additional information before retrying to find path to a leaf node. 
 
-Our design uses the intent tree for interpretability and malleability. It allows domain experts to organize knowledge by organizing answers under any hierarchy that is visually meaningful to them, while the training pairs are created automatically from the hierarchy as described below. The tree also offers interpretability to end users. If the chatbot fails in a final answer, the user can be shown what are the assumptions made by the chatbot, i.e. the branching decisions along the tree path. The engine allows the user to backtrack and instruct the bot in correcting any of the assumptions before retrying (see Appendix \ref{sec:wallyUIclip}). The malleability benefit of the intent tree comes from the branching choices being constrained to tighter decision spaces. 
- 
+Our design uses the intent tree for interpretability. It allows domain experts to organize knowledge by organizing answers under any hierarchy that is visually meaningful to them, while the training pairs are created automatically from the hierarchy as described below. The tree also offers interpretability to end users. If the dialogue engine fails in a final answer, the user can be shown what are the assumptions made by the chatbot, i.e. the branching decisions along the tree path. The engine allows the user to backtrack and instruct the bot in correcting any of the assumptions before retrying. Figure 2 shows a view of the user interface, after the user instructed the dialogue engine that the offered answer was not good. The engine retries and asks the user to clarify the branching choice at a node where the engine has low confidence. The choices we see in the option bubbles are the possible branches at that node. 
+
 Under a conventional approach with intent classifiers, the system would either need a large classifier that can model all the final intents, or sets of intents would be organized somehow (e.g. in a tree) and each set would need its own classifier. Using ELMs, we use the same model at every turn, i.e. branching point in the intent tree. And because all text embeddings for a dataset can be pre-computed, only the user input has be processed through a deep network at inference, compared to the slower processing of multiple deep networks if the system were to use multiple classifier models. 
 
-Our system allows for any number of examples to be linked to a final intent, and for multiple descriptions to be linked to a superset. In such cases, the example or description with the shortest distance to the user input will represent the leaf or non-leaf node. All nodes in production have less than 8 examples, with the average being 2.6, i.e. the system is few-shot at most and often only one-shot. 
+Our system allows for any number of examples to be linked to a final intent, and for multiple descriptions to be linked to a superset. In such cases, the example or description with the best similarity score to the user input will represent the leaf or non-leaf node. All nodes in production have less than 8 examples, with the average being 2.6, i.e. the system is few-shot at most and often only one-shot. 
 
 \subsection{Branching Decision Making}
 
-Given an ELM with an embedding dimensionality $\math{d}$, a user input $\math{u}$, and $\math{M}$ options represented by the text strings $\math{b_1, b_2, ... b_M}$ at a particular branching point on a path along the intent tree, the dialogue engine does the following: (i) calls the ELM to embed the text $\math{u}$ into an $\math{ELM(u)} \in \mathbb{R}^{d}$ vector if this is the first time it sees $\math{u}$ or if $\math{u}$ has changed; (ii) it then retrieves the $\math{ELM(b_1), ELM(b_2), ... ELM(b_M)}$ $\mathbb{R}^{d}$ vectors that are pre-computed and change only when the knowledge base is edited; (iii) makes a branching choice as $\arg\min_{b_x} Dist(\math{ELM(u)},\math{ELM(b_x)})$ where the $\math{Dist}$ is a distance function such as cosine similarity. In summary, each branching decision is a nearest-neighbour calculation over the embedded vectors. By repeating this process at each successive branching point, a path is found in the intent tree ending with a leaf node. 
+Given an ELM with an embedding dimensionality $\math{d}$, a user input $\math{u}$, and $\math{M}$ options represented by the text strings $\math{b_1, b_2, ... b_M}$ at a particular branching point on a path along the intent tree, the dialogue engine does the following: (i) calls the ELM to embed the text $\math{u}$ into an $\math{ELM(u)} \in \mathbb{R}^{d}$ vector if this is the first time it sees $\math{u}$ or if $\math{u}$ has changed; (ii) it then retrieves the $\math{ELM(b_1), ELM(b_2), ... ELM(b_M)}$ $\mathbb{R}^{d}$ vectors that are pre-computed and change only when the knowledge base is edited; (iii) makes a branching choice as 
+\begin{equation*}
+\arg\max_{b_x} Sim(\math{ELM(u)},\math{ELM(b_x)})
+\end{equation*}
+\noindent where the $\math{Sim}$ is a similarity function. In summary, each branching decision is a nearest-neighbour calculation over the embedded vectors. By repeating this process at each successive branching point, a path is found in the intent tree ending with a leaf node. 
 
-We use SBERT\footnote{\url{https://github.com/UKPLab/sentence-transformers}} \citep{reimers-2019-sentence-bert} as the framework and library for ELMs. The first chatbot version was deployed in production without any fine-tuning, because the publicly available general purpose ELMs worked well enough for the first set of intents. We were also able to keep adding new intents without having to do anything for the ELM. As training data became available, the ELM began to be fine-tuned for increasingly better performance. 
+This system uses SBERT\footnote{\url{https://github.com/UKPLab/sentence-transformers}} \citep{reimers-2019-sentence-bert} as the framework and library for ELMs. The first chatbot version was deployed in production without any fine-tuning, because the publicly available general purpose ELMs worked well enough for the first set of intents. We were also able to keep adding new intents without having to do anything for the ELM. As training data became available, the ELM began to be fine-tuned for increasingly better performance. 
 
 \subsection{ELM Fine-tuning}
 \label{ELMFineTuning}
-SBERT provides a variety of network architectures and loss functions for fine-tuning. We use the Siamese network architecture and supervised training with pairs of sentences that are scored for their similarity, e.g. on a scale 0 to 1.
-
-The intent tree is used to automatically generate the fine-tuning pairs. Starting from a leaf node, i.e. a final intent, positive similarity pairs are created by pairing its examples with the superset description of its parent, then with its grandparent, and so on up until the root. An example for positive pairs for "reset password" is shown visually in Figure 1 and the exact pairs are listed in Appendix \ref{sec:posNegPairsExamples}. In summary, this creates positive associations from the root towards the leaf node. Negative similarity pairs are created by pairing the examples of a final intent leaf node with the superset descriptions of the siblings of its parent, then with the siblings of its grandparent, and so on as Figure 1 and Appendix \ref{sec:posNegPairsExamples} show in more details. These negative associations try to keep the intent inference along the correct ancestry path. 
-
-For the similarity scores of the pairs created above, we use an approach inspired by a data-augmentation process from the SBERT team \cite{thakur-2020-AugSBERT}, where a newly added pair is scored for similarity by an auxiliary model which, instead of outputting embedding vectors, is optimized to output similarity scores. SBERT provides such auxiliary models off-the-self. Our particular approach introduces a parameter $\theta$ that can control how knowledge is combined between the auxiliary model and the tree structure. 
-
-Taking an auxiliary model (AUX), the similarity scores for a positive pair $\math(p1, p2)$ are set as $\max(\theta, AUX(p1, p2))$, and for a negative pair $\math(n1, n2)$ as $\min(1-\theta, AUX(n1, n2)$. The choice for $\theta$ is discussed below. One reason for these formulas is to offer flexibility during learning through uncertainty, compared to fixing positive scores to 1 and negative ones to 0. Another reason is to take advantage of any good confidence the scoring model AUX might already have when it's downloaded. For example, if we use $\theta$ of 0.7, and if AUX measures a positive pair $\math(p1, p2)$ below 0.7, i.e. AUX does not have good a priori knowledge for this positive pair, we set the score to $\theta$; but if AUX measures $\math(p1, p2)$ above 0.7 we keep the AUX score, since we don't want to worsen a good a priori knowledge by lowering it to $\theta$. Thus, $\theta$ can be seen as a cutoff for transfer of confirming knowledge from AUX, as well as how much new knowledge is asserted when it does not confirm a label.  
-
-The parameter $\theta$ can vary from 0.5 to 1. At the upper extreme of 1, it will ignore any knowledge from the AUX model. At the lower extreme of 0.5, if AUX measures a positive pair as negative, AUX is given as much weight as the fine-tunning data and the label is set to denote complete uncertainty. We have empirically chosen 0.7 for $\theta$ based on parameter sensitivity testing shown in Table \ref{tab: theta-variation} in Appendix \ref{sec:thetaImpact}). 
-
->>>>>>>>> TO ADD/REVISE ABOVE AFTER WEI's EXPERIMENTS WITH A VALIDATION SET
-
+The intent tree is used to automatically generate the fine-tuning pairs. Starting from a leaf node, i.e. a final intent, positive similarity pairs are created by pairing its examples with the superset description of its parent, then with its grandparent, and so on up until the root. An example for positive pairs for "reset password" is shown visually in Figure 1 and the exact pairs are listed in Appendix \ref{sec:posNegPairsExamples}. In summary, this creates positive associations from the root towards the leaf node. Negative similarity pairs are created by pairing the examples of a final intent leaf node with the superset descriptions of the siblings of its parent, then with the siblings of its grandparent, and so on as Figure 1 and Appendix \ref{sec:posNegPairsExamples} show in more details. These negative associations try to keep the intent inference along the correct ancestry path.
 
 Using the above approach, we have found that fine-tuning is a straightforward process, without much sensitivity to learning rates, batch sizes, or number of epochs, as shown further below. Generally, the fine-tuning converges within a few epochs. 
 
 \subsection{New Intents and Out-of-scope Function}
-The automated nature of this fine-tuning pairs creation and scoring lets domain admins add new intents simply by visually creating a new leaf node, or visually changing the tree structure on the fly.  
+The automated nature of this fine-tuning pairs creation lets domain admins add new intents simply by visually creating a new leaf node, or visually changing the tree structure on the fly.  
 
 Taking advantage of the flexibility of the ELM approach, we also developed a custom out-of-scope function. It measures the distance of a user input to cluster centroids of intent supersets and then compares these distances to the average inter-superset distance. In other words, it tries to estimate if the input is outside the manifold of the domain. If an input is much further compared to the inter-density, it is considered as an out-of-scope request. We have also found that a simpler out-of-scope function can be made just by creating an intent whose examples are picked solely on the quality of being far outside the domain. Multiple out-of-scope functions can be used across different branches of the intent tree. 
 
@@ -290,10 +286,10 @@ Taking advantage of the flexibility of the ELM approach, we also developed a cus
 \section{Evaluation}
 We evaluate first with public ELMs, which are already pre-trained for general use and can be used without any fine-tuning. Then we experiment with how much fine-tuning is need to approach state-of-the-art performance. The code for this paper is made publicly available. 
 
-All the variations of our approach use a general form of an ELM together with some distance function. We will refer to this as the ELM+Dist approach. We vary some design choices in terms of the ELM and the distance function. In one variation we calculate the cosine distance between the user input and each example of a final intent, and then use nearest-neighbour as a representative measure for that intent. When the ELM is based on SBERT for example, we will label this variation as SBERT+NN. Another variation calculates the average of all the embeddings under an intent to get a single-vector representation. Then we can compare a user input to this average instead of the multiple calculation required with nearest-neighbour. We will refer to this as SBERT+AveSE. The latter variation makes the inference time proportional to number of intents instead of proportional to the total number of examples.  
+All the variations of our approach use the general form of an ELM combined with some similarity function over the embedding vectors. We will refer to this as the ELM+Sim approach. We vary some design choices in terms of the ELM and the similarity function. In one variation we calculate similarity between the user input and each example of a final intent, and then use nearest-neighbour as a representative measure for that intent. When the ELM is based on SBERT for example, we will label this variation as SBERT+NN. Another variation calculates the average of all the embeddings under an intent to get a single-vector representation. Then we can compare a user input to this average instead of the multiple calculation required with nearest-neighbour. We will refer to this as SBERT+AveSE. The latter variation makes the inference time proportional to number of intents instead of proportional to the total number of examples.  
 
-We also replace SBERT as an ELM framework with SimCSE\footnote{\url{https://github.com/princeton-nlp/SimCSE}} \citep{gao2021simcse}, giving us SimCSE+NN and SimCSE+AveSE. SBERT and SimCSE use very different datasets (See Appendix \ref{sec:ELMpreTrainingDatasets}) for their pre-trained ELMs, making the ELMs quite different. Also, the way SimCSE fine-tunes its ELM is different from how we fine-tune with SBERT. Unlike %The Company's 
-the method in Section \ref{ELMFineTuning} where a similarity score is required for a fine-tuning pair, SimCSE does not require a similarity score due to its contrastive loss function \citep{gao2021simcse}. 
+We also replace SBERT as an ELM framework with SimCSE\footnote{\url{https://github.com/princeton-nlp/SimCSE}} \citep{gao2021simcse}, giving us SimCSE+NN and SimCSE+AveSE. SBERT and SimCSE use very different datasets for their pre-trained ELMs, making the ELMs quite different. Tables 11 and 12 list those datasets for the ELMs we use, sup-simcse-roberta-large from SimCSE and all-mpnet-base-v2 from SBERT, respectively. Also, the way SimCSE fine-tunes its ELM is different from how we fine-tune with SBERT. Unlike the method in Section \ref{ELMFineTuning} where a similarity score is required for a fine-tuning pair, SimCSE does not require a similarity score due to its contrastive loss function \citep{gao2021simcse}. 
+
 
 \subsection{\textbf{Evaluation Datasets}} 
 We evaluate on three public datasets and on Intact's helpdesk dataset, as described in Table \ref{tab:freq}. The public datasets are taken from the DialoGLUE benchmark \cite{MehriDialoGLUE2020}: CLINC150 \citep{larson-etal-2019-evaluation}, BANKING77 \citep{casanueva-etal-2020-efficient}, and HWU64 \citep{liu2019benchmarking}.  
@@ -313,11 +309,39 @@ The Company & 33 & 186 & 1 \\
 \label{tab:freq}
 \end{table}
  
-Each dataset has a fixed split for training and testing data. 
+Each dataset has a fixed split for training and testing data. For the public datasets, the same split is used as with previous methods compared on that benchmark. For Intact's dataset, 99 examples are used for testing, leaving only 87 examples for fine-tuning. Nevertheless, due to how examples are combined into positive and negative pairs, the number of fine-tuning pairs is 6427. Tables \ref{tab:NumTrainTest} and \ref{tab:NumFineTuning} list the numbers of training, test and fine-tuning examples for the public datasets. 
 
->>>>>> ? VALIDATION DATASET?
+% No. of training and test examples
+\begin{table}[H]
+\setlength\tabcolsep{9} % let LaTeX compute intercolumn whitespace
+\footnotesize\centering
+\begin{tabular}{llll}
+\hline \textbf{Data set} & \textbf{Training} & \textbf{Testing} \\
+\hline CLINC150 & 19,200 & 4,500  \\
+BANKING77 & 10,003 & 3,080  \\
+HWU64 & 24,649 & 1,067  \\
+%The Company & 87 & 99  \\
+\hline
+\end{tabular}
+\caption{Numbers of training and testing examples}
+\label{tab:NumTrainTest}
+\end{table}
 
-For the public datasets, the same split is used as with previous methods compared on that benchmark. For Intact's dataset, 99 examples are used for testing, leaving only 87 examples for fine-tuning. Nevertheless, due to how examples are combined into positive and negative pairs, the number of fine-tuning pairs is 6427. Tables \ref{tab:NumTrainTest} and \ref{tab:NumFineTuning} in Appendix \ref{sec:noExamples} lists the numbers of training, test and fine-tuning examples for the public datasets. 
+% No. of fine-tuning examples
+\begin{table}[H]
+\setlength\tabcolsep{9} % let LaTeX compute intercolumn whitespace
+\footnotesize\centering
+\begin{tabular}{llll}
+\hline \textbf{Data set} & \textbf{5-shot} & \textbf{10-shot}\\
+\hline CLINC150 & 563,250 & 2,257,506 \\
+BANKING77 & 147,840 & 593,670  \\
+HWU64 & 102,080 & 408,960  \\
+%The Company (few-shot) & 6427   \\
+\hline
+\end{tabular}
+\caption{The number of fine-tuning pairs generated from 5 or 10 training examples}
+\label{tab:NumFineTuning}
+\end{table}
 
 The 186 intent examples listed for Intact's dataset in Table \ref{tab:freq} are all associated to final intents, i.e. to leaf nodes in Intact's intent tree. The tree also has 5 non-leaf nodes that contain 21 superset descriptions that additionally combine into fine-tuning pairs with the 87 fine-tuning examples, as described in Section 2. One evaluation setup for Intact's data considers all combinations made possible by the intent tree. 
 
@@ -340,13 +364,13 @@ SimCSE+NN after fine-tuning & 69.70 & 61.62  \\
 SimCSE+AveSE after fine-tuning & 72.73 & 60.61  \\
 \midrule
 \end{tabular}
-\caption{Accuracy (\%) on The Company's dataset}
+\caption{Accuracy (\%) on Intact's dataset}
 \label{tab:accuracyIntact}
 \end{table}
 
 Since the public datasets do not have an intent tree, a second evaluation setup evaluates Intact's data on a flat version where the non-leaf information (i.e. the tree) is ignored and only the 87 fine-tuning examples are used. In this flat setup, fine-tuning pairs are created in the same way like for the public datasets: for positive pairs, an intent example is paired in permutations with all other examples from the same intent. For negative pairs, an intent example is paired in permutation with examples from different intents. 
 
-Since the related previous methods evaluate on 5-shot, 10-shot, or both, we do both when we apply our ELM+Dist methods to the benchmark datasets. We follow the benchmark guidelines as to which 5 or 10 examples to use per intent. 
+Since the related previous methods evaluate on 5-shot, 10-shot, or both, we do both when we apply our ELM+Sim methods to the benchmark datasets. We follow the benchmark guidelines as to which 5 or 10 examples to use per intent. 
 
 \begin{table*}[h]
 \centering
@@ -384,48 +408,11 @@ Since the related previous methods evaluate on 5-shot, 10-shot, or both, we do b
 
 \subsection{\textbf{Setup of Experiments}}
 
-For SBERT, we use their all-mpnet-base-v2 as the ELM and stsb-roberta-large as the auxiliary data-augmentation scoring model (AUX). The learning rate is kept at the default 2e-05. Batch sizes were 128 for the CLINC150 and HWU64 datasets, and 64 for BANKING77 due to GPU limitations and 64 for Intact's dataset due to its small size. Epochs were varied as noted below. For SimCSE, we started from their sup-simcse-roberta-large ELM, and used their default learning rate of 5e-05 and a batch size of 32. One limitation to our work is that we do not consider more ELMs. Cosine similarity was used as the distance function in all cases. We used one GTX1080Ti GPU card, and the run time statistics are in Table \ref{tab:runtime} in Appendix \ref{sec:runtime}.
+For SBERT, we use their all-mpnet-base-v2 as the ELM. The learning rate is kept at the default 2e-05. Batch sizes were 128 for the CLINC150 and HWU64 datasets, and 64 for BANKING77 due to GPU limitations and 64 for Intact's dataset due to its small size. Epochs were varied as noted below. For SimCSE, we started from their sup-simcse-roberta-large ELM, and used their default learning rate of 5e-05 and a batch size of 32. One limitation to our work is that we do not consider more ELMs. Cosine similarity was used as the basis for the similarity function in all cases. We used one GTX1080Ti GPU card, and the run time statistics are shown in Table \ref{tab:runtime}. 
  
 \subsection{\textbf{Results}}
 
-Table \ref{tab:accuracyIntact} shows the results on The Company's dataset, under different ELMs (SBERT or SimCSE), different distance computation approaches (NN or AveSE), with or without fine-tuning of ELMs, and with or without the intent tree. The “Flat” column is the results of not using the tree but directly comparing the user input to final intent examples. On The Company's dataset, we compare to only two state-of-the-art (SOTA) methods: CONVBERT+Ex+Obs \citep{mehri-eric-2021-example} and DNNC \citep{zhang-etal-2020-discriminative} due to source code availability. We used their default settings of 100 epochs and 10 epochs respectively. The results shown for our methods are after 5 epochs. Tables \ref{tab:oneEpoch} and \ref{tab:threeEpoch} in Appendix \ref{sec:Epochs} show that 1 and 3 epochs produce similar results. All intent examples in the training set are used to train the models since they range from 1 to 8 per intent. The accuracy is collected on the test dataset.  
-
-Table \ref{tab:accuracyIntact} shows that SBERT's ELM significantly outperforms the two SOTA methods on this dataset with and without fine-tuning. SimCSE's performance is discussed below. We also observe that performance of the flat version drops after fine-tuning. This is likely due to many intents having only one example, which means they produce only negative fine-tuning pairs when the tree is ignored. 
-
-It is also interesting to see that without fine-tuning the accuracy of the flat version is better than using the intent tree. This is because in the flat approach the user input is compared directly to final intent examples, while with the tree version the user input is first compared to internal superset nodes, which can vary greatly as summaries, contexts, topic descriptions, etc. However, after we fine-tune the ELM using the method described in Section \ref{ELMFineTuning}, the tree version performs better with SBERT. SimCSE does not perform well without fine-tuning for any dataset in both Table \ref{tab:accuracyIntact} and \ref{alpha}. This is likely because SimCSE's ELM is pre-trained on a much smaller and less diverse dataset collection compared to SBERT's ELM (see Appendix \ref{sec:ELMpreTrainingDatasets}). SimCSE does not improve much after fine-tuning on The Company's dataset, likely because this dataset is so small. As shown next, on large datasets like in Table \ref{alpha}, SimCSE's ELM is able to make up for its poorer pre-training and catch-up to SBERT's ELM.   
-
-Table \ref{alpha} compares our methods with 6 SOTA methods on the public benchmark datasets. The results from the SOTA methods are the best from their respective publication. 20 epochs are used for our methods. Table \ref{tab:OneEpochBenchmark} in Appendix \ref{sec:Epochs} shows that our results are not much different even when using 1 epoch. Only the flat approach is used since there is no intent tree for these datasets. The results show that with fine-tuning, our methods outperform the SOTA methods on these benchmark datasets. The fact that SimCSE meets or exceeds our SBERT results suggests that the success of the ELM+Dist approach does not need similarity scoring of fine-tuning pairs, given a contrastive loss function.  
-
-
-\section{Conclusions}
-Based on our evaluation results and The Company's experience, Transformer-based models that are optimized for embedding make it possible today to meet and exceed state-of-the-art results in resolving conversation intents when there is only a few examples per intent or as little as one, and do so without having to train classifiers. At least in the The Company's use case, off-the-shelf ELMs can work reasonably well without fine-tuning, and fine-tune well with as little as 1 epoch when even a small amount of training examples becomes available. 
-
-The optional intent tree is made more feasible with the ELM+Dist approach, since a single model can be used for all branching decisions. We have shown some benefits of the intent tree such as additional interpretability, and the ability to create a better performing and less imbalanced set of fine-tuning pairs, because negative pairs do not have to be created with all other intents in the dataset but only with siblings along the ancestry path. However, a limitation of this work is that we don't evaluate the other benefits mentioned such as the malleability and out-of-scope handling.
-
-An ELM fine-tuned for a particular domain can be useful for more than just dialogue system intents. Intact uses the same ELMs for detecting topics in documents, finding clusters in text collections, and text search functions.
-
-Our future work is on using unsupervised training for ELMs, and zero-shot intent resolution by using rules to combine multiple resolved contexts. 
-
-\section{Ethical Considerations}
-We carefully reviewed the intent tree and all intent examples before using them for the evaluations in this paper, and made sure they do not contain any user identifiers, private information, or sensitive technical information. 
-
-In terms of bias, at least in terms of the distance function we think that an example-based classifier can be less susceptible to bias compared to classifier models because even a single outlier can get an equal representation during inference like any other example, as long as the distance function is something like 1-nearest-neighbour and does not aggregate like with an average. Nevertheless, the text embedding model that feeds the distance function could have easily picked up biases during its training from the pre-training datasets. 
-
-
-%%
-%% The next two lines define the bibliography style to be used, and
-%% the bibliography file.
-\bibliographystyle{ACM-Reference-Format}
-\bibliography{sample-base}
-
-%%
-%% If your work has an appendix, this is the place to put it.
-\appendix
-
-\section{Results with Different Epoch Numbers}
-\label{sec:Epochs}
-
-Tables \ref{tab:oneEpoch} and \ref{tab:threeEpoch} show the results of different variations of our method on the The Company dataset with 1 epoch or 3 epochs, respectively.
+Table \ref{tab:accuracyIntact} shows the results on Intact's dataset, under different ELMs (SBERT or SimCSE), different similarity approaches (NN or AveSE), with or without fine-tuning of ELMs, and with or without the intent tree. The “Flat” column is the results of not using the tree but directly comparing the user input to final intent examples. On Intact's dataset, we compare to only two state-of-the-art (SOTA) methods: CONVBERT+Ex+Obs \citep{mehri-eric-2021-example} and DNNC \citep{zhang-etal-2020-discriminative} due to source code availability. We used their default settings of 100 epochs and 10 epochs respectively. The results shown for our methods are after only 5 epochs. Tables \ref{tab:oneEpoch} and \ref{tab:threeEpoch} show that 1 and 3 epochs produce similar results. All intent examples in the training set are used to train the models since they range from 1 to 8 examples per intent. The accuracy is collected on the test dataset.  
 
 % 1 epoch on Intact data
 \begin{table}[h]
@@ -439,7 +426,7 @@ SimCSE+NN fine-tuned & 60.00 & 62.22  \\
 SimCSE+AveSE fine-tuned & 77.78 & 75.56  \\
 \hline
 \end{tabular}
-\caption{1-epoch accuracy on The Company's dataset}
+\caption{1-epoch accuracy on Intact's dataset}
 \label{tab:oneEpoch}
 \end{table}
 
@@ -455,11 +442,18 @@ SimCSE+NN fine-tuned & 73.33 & 66.67  \\
 SimCSE+AveSE fine-tuned & 73.33 & 64.44  \\
 \hline
 \end{tabular}
-\caption{3-epochs accuracy on The Company's dataset}
+\caption{3-epochs accuracy on Intact's dataset}
 \label{tab:threeEpoch}
 \end{table}
 
-Table \ref{tab:OneEpochBenchmark} shows the accuracy of our methods on the benchmark dataset when using 1 epoch.
+Table \ref{tab:accuracyIntact} shows that SBERT's ELM significantly outperforms the two SOTA methods on Intact's dataset with and without fine-tuning. We also observe that the performance of the flat version drops after fine-tuning. This is likely due to many intents having only one example, which results in only negative fine-tuning pairs when the tree is ignored. 
+
+It is also interesting to see that without fine-tuning the accuracy of the flat version is better than using the intent tree. This is because in the flat approach the user input is compared directly to final intent examples, while with the tree version the user input is first compared to internal superset nodes, which can vary greatly as summaries, contexts, topic descriptions, etc. However, after we fine-tune the ELM using the method described in Section \ref{ELMFineTuning}, the tree version performs better with SBERT. 
+
+SimCSE does not perform well without fine-tuning for any dataset in both Table \ref{tab:accuracyIntact} and \ref{alpha}. This is likely because SimCSE's ELM is pre-trained on a much smaller and less diverse dataset collection compared to SBERT's ELM. SimCSE does not improve much after fine-tuning on Intact's dataset, likely because this dataset is so small. As shown next, on large datasets like in Table \ref{alpha}, SimCSE's ELM is able to make up for its poorer pre-training and catch-up to SBERT's ELM.   
+
+Table \ref{alpha} compares our methods with 6 SOTA methods on the public benchmark datasets. The results from the SOTA methods are the best from their respective publication. 20 epochs are used for our methods. Table \ref{tab:OneEpochBenchmark} shows that our results are not much different even when using 1 epoch. Only the flat approach is used since there is no intent tree for these datasets. The results show that with fine-tuning, our methods outperform the SOTA methods on these benchmark datasets.   
+
 % 1 epoch on benchmark
 \begin{table*}[h]
 \centering
@@ -480,262 +474,21 @@ Table \ref{tab:OneEpochBenchmark} shows the accuracy of our methods on the bench
 \label{tab:OneEpochBenchmark}
 \end{table*}
 
-\section{Positive and negative fine-tuning pairs example}
-\label{sec:posNegPairsExamples}
+\section{Conclusions}
+Based on our evaluation results and Intact's experience in production use for over a year, Transformer-based models that are optimized for embedding make it possible today to meet and exceed state-of-the-art results in resolving conversation intents when there are only a few examples per intent or as little as one, and do so without having to train classifiers. At least in Intact's use case, off-the-shelf ELMs can work reasonably well without fine-tuning, and can fine-tune well with as little as one epoch when even a small amount of training examples becomes available. 
 
-The following are the positive and negative pairs created by the method described in Section \ref{chabotOverview} for the example visible in Figure 1.
+A structure like the intent tree is more feasible with the ELM+Sim approach since a single model can be used for all branching decisions. We have shown some benefits of the intent tree such as additional interpretability and the ability to create a better performing and less imbalanced set of fine-tuning pairs, because negative pairs do not have to be created with all other intents in the dataset but only with siblings along the ancestry path. A limitation of this work is that we don't present evaluation results for the other benefits mentioned, such as the malleability and out-of-scope handling.
 
-\subsection{Positive pairs}
-One set of positive pairs is created with ancestors nodes along the path to root of the tree, giving in this case:
+Another benefit of the ELM+Sim approach is that an ELM that is fine-tuned for a particular domain can be useful for more than just dialogue system intents. Intact uses the same ELMs for detecting topics in documents, finding clusters in text collections, and text search functions.
 
-- ("reset password", "network password")
-
-- ("reset password", "login problems")
-
-Unless an intent has a single example, another set of positive pairs are created with other examples under the same intent. Since in Figure 1 we see only example for "reset password" intent, we will add "set a new password" and "update password" as two others for illustration. The positive pairs are then
-
-- ("reset password", "set a new password")
-
-- ("reset password", "update password")
+Our future work is on evaluation out-of-scope detection and on comparing ELM-based approaches to classifier-based dialogue systems beyond few-shot learning. 
 
 
-\subsection{Negative pairs}
-Negative pairs are created with all the siblings of each ancestor in turn, all the way up to the root of the tree:
-
-With siblings of parent:
-
-- ("reset password", "forgot password")
-
-- ("reset password", "unlock password")
-
-With siblings on grandparent:
-
-- ("reset password", "voicemail")
-
-With siblings of grand-grandparent:
-
-- ("reset password", "telephony and ...")
-
-- ("reset password", "work-from-home ...")
-
-- ("reset password", "microsoft outlook")
-
-- ("reset password", "microsoft teams")
-
-- ("reset password", "email security")
-
-- ("reset password", "new access ...")
-
-- ("reset password", "follow-ups ...")
-
-\section{Numbers of training, testing and fine-tuning examples}
-\label{sec:noExamples}
-
-Table \ref{tab:NumTrainTest} shows the numbers of training and testing examples in the three benchmark datasets.
-Table \ref{tab:NumFineTuning} lists the number of fine-tuning examples for each data set.
-
-% No. of training and test examples
-\begin{table}[H]
-\setlength\tabcolsep{9} % let LaTeX compute intercolumn whitespace
-\footnotesize\centering
-\begin{tabular}{llll}
-\hline \textbf{Data set} & \textbf{Training} & \textbf{Testing} \\
-\hline CLINC150 & 19,200 & 4,500  \\
-BANKING77 & 10,003 & 3,080  \\
-HWU64 & 24,649 & 1,067  \\
-%The Company & 87 & 99  \\
-\hline
-\end{tabular}
-\caption{Numbers of training and testing examples}
-\label{tab:NumTrainTest}
-\end{table}
-
-% No. of fine-tuning examples
-\begin{table}[H]
-\setlength\tabcolsep{9} % let LaTeX compute intercolumn whitespace
-\footnotesize\centering
-\begin{tabular}{llll}
-\hline \textbf{Data set} & \textbf{5-shot} & \textbf{10-shot}\\
-\hline CLINC150 & 563,250 & 2,257,506 \\
-BANKING77 & 147,840 & 593,670  \\
-HWU64 & 147,840 & 408,960  \\
-%The Company (few-shot) & 6427   \\
-\hline
-\end{tabular}
-\caption{The number of fine-tuning pairs generated from 5 or 10 training examples}
-\label{tab:NumFineTuning}
-\end{table}
-
-% Fine-tuning/test examples
-%\begin{table*}[h]
-%\centering
-%\small
-%\begin{tblr}{l|c|c|c|c|c|c}
-%\toprule
-%  \multirow{2}{*}{\textbf{No. of Examples}} & \SetCell[c=2]{c} \textbf{CLINC150} & & \SetCell[c=2]{c} \textbf{BANKING77} & & \SetCell[c=2]{c} \textbf{HWU64}\\ 
-%\midrule
-%             &  5-shot &  10-shot     &  5-shot &  10-shot&  5-shot &  10-shot  & \\ 
-%\midrule
-%   \text{Fine-tuning examples} & 563,250 & 2,257,506 & 147,840 & 593,670 & 147,840 & 408,960 \\
-%  \text{Testing examples} & 4,500 & 4,500 & 3,080 & 3,080 & 1,067 & 1,067\\
-%\bottomrule
-%\end{tblr}
-%\caption[caption]{The number of fine-tuning pairs created and number of testing examples}
-%\label{tab:noexamples}
-%\end{table*}
-
-\section{Run time}
-\label{sec:runtime}
-Table \ref{tab:runtime} shows the GPU usage times. The first column shows the time it took for the auxiliary data-augmentation model (stsb-roberta-large) to produce the similarity scores for each fine-tuning pair, before they are used for fine-tuning. The second column shows the fine-tuning time using the ELM (all-mpnet-base-v2) for 1 epoch.
-
-% GPU hours
-\begin{table}[H]
-\setlength\tabcolsep{9} % let LaTeX compute intercolumn whitespace
-\footnotesize\centering
-\resizebox{\columnwidth}{!}{%
-\begin{tblr}{l|c|c|c}
-\toprule
-    \multicolumn{1}{c|}\textbf{Dataset} &  \multicolumn{1}{c|}\textbf{Few-shot} & \multicolumn{1}{c|}\textbf{Fine-tuning pairs }& 
-    \multicolumn{1}{c|}\textbf{Fine-tuning }\\
-    & & {\bf scoring time} & {\bf time per epoch}\\
-    \hline
-\multirow{2}{*}{\textbf{CLINC150}} 
-   & 5-shot & 3h & 0.75h \\
-   & 10-shot & 15h & 2.5h \\
-   \hline
-   \multirow{2}{*}{\textbf{BANKING77}} 
-   & 5-shot & 1h & 0.5h \\
-   & 10-shot & 4h & 1.5h \\
-   \hline
-   \multirow{2}{*}{\textbf{HWU64}} 
-   & 5-shot & 0.5h & 0.1h \\
-   & 10-shot & 2.5h & 0.5h \\
-\bottomrule
-\end{tblr}
-}
-\caption{GTX 1080Ti GPU time for computing the similarity scores when creating the fine-tuning pairs and for fine-tuning SBERT)}
-\label{tab:runtime}
-\end{table}
-
-%% theta variation
-\begin{table*}[h]
-\centering
-\small
-\begin{tblr}{lcccccc}
-\toprule
-    \multicolumn{2}{c|}\textbf{} & \multicolumn{2}{c|}\textbf{Company's Data}& 
-    \multicolumn{1}{c|}\textbf{CLINC150} &
-    \multicolumn{1}{c|}\textbf{BANKING77} &  
-    \multicolumn{1}{c|}\textbf{HWU64} &\\ 
-\midrule
-            \textbf{Models} & $\theta$ & \text{Flat} & \text{Tree}& \text{5-shot}& \text{5-shot}&\text{5-shot}\\
-\midrule   
-\multirow{4}{*}{SBERT+NN} 
-   & 0.6 & 89.90 & 87.88 & 89.15 & 81.66 & 77.97\\
-   & 0.7 & 90.91 & 91.92 & 90.11 & 81.82 & 80.67\\
-   & 0.8 & 90.91 & 89.90 & 90.42 & 80.97 & 81.23\\
-   & 0.9 & 90.91 & 87.88 & 90.02  & 79.51 & 81.41\\
-   \hline
-   \multirow{4}{*}{SBERT+AveSE}
-   & 0.6 & 88.89 & 88.89 & 89.20 & 81.85 & 79.55\\
-   & 0.7 & 89.90 & 90.91 & 89.94 & 82.63 & 80.95\\
-   & 0.8 & 89.90 & 89.90 & 90.44 & 81.36 & 81.50\\
-   & 0.9 & 89.90 & 88.89 & 89.93 & 79.42 & 74.16\\
-\bottomrule
-\end{tblr}
-\caption[caption]{1-epochs $\theta$ sensitivity testing on full company's dataset and three public datasets with 5-shot}
-\label{tab: theta-variation}
-\end{table*}
-
-\section{Impact of $\theta$ values}
-\label{sec:thetaImpact}
-
-Table \ref{tab: theta-variation} shows accuracy varies for different values of $\theta$ (described in Section \ref{ELMFineTuning}) when creating fine-tuning pairs from the full The Company dataset, and for the 5-shot scenario of the public benchmarks. For the best results we see a tie between a $\theta$ of 0.7 and 0.8 for SBERT+NN, and 0.7 is a close second to 0.8 for SBERT+AveSE. 
-
-
-
-
-\section{Datasets used by SBERT and SimCSE to pre-train their ELM}
-\label{sec:ELMpreTrainingDatasets}
-
-When we download SBERT's and SimCSE's ELMs they come pre-trained on different datasets. Tables 11 and 12 list those datasets for sup-simcse-roberta-large from SimCSE and all-mpnet-base-v2 from SBERT, respectively. 
-
-\begin{table}[H]
-\setlength\tabcolsep{9} % let LaTeX compute intercolumn whitespace
-\footnotesize\centering
-\begin{tabular}{cc}
-\hline \textbf{Dataset}  & \textbf{Training tuples} \\
-\hline
-SNLI + MNLI & 314k \\
-\hline
-\textbf{Total} &\textbf{314k} \\
-\hline
-\end{tabular}
-\caption{Pre-training datasets for sup-simcse-roberta-large by SimCSE}
-\label{tab:SimCSE}
-\end{table}
-
-
-\begin{table}[H]
-\setlength\tabcolsep{9} % let LaTeX compute intercolumn whitespace
-\footnotesize\centering
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{ll}
-\hline \textbf{Dataset}  & \textbf{Training tuples} \\
-\hline 
-Reddit comments (2015-2018) & 726M \\
-S2ORC & 116M \\
-WikiAnswers Duplicate question pairs & 77M \\
-PAQ (Question, Answer) pairs	 & 64M \\
-S2ORC Citation pairs (Titles) & 52M \\
-S2ORC (Title, Abstract)	 & 41M \\
-Stack Exchange (Title, Body) pairs	 & 25M \\
-Stack Exchange (Title+Body, Answer) pairs	 & 21M \\
-Stack Exchange (Title, Answer) pairs	 & 21M \\
-MS MARCO triplets	 & 9M \\
-GOOAQ & 3M \\
-Yahoo Answers (Title, Answer)	 & 1M \\
-Code Search & 1M \\
-COCO Image captions	 & 828K \\
-SPECTER citation triplets	 & 684K \\
-Yahoo Answers (Question, Answer)	 & 681K \\
-Yahoo Answers (Title, Question) & 659K \\
-SearchQA & 582K \\
-Eli5 & 325K \\
-Flickr 30k & 317K \\
-Stack Exchange Duplicate questions (titles) & 304K \\
-AllNLI (SNLI and MultiNLI) & 277K \\
-Stack Exchange Duplicate questions (bodies)	 & 250K \\
-Stack Exchange Duplicate questions (titles+bodies)	 & 250K \\
-Sentence Compression & 180K \\
-Wikihow & 128K \\
-Altlex & 112K \\
-Quora Question Triplets & 103K \\
-Simple Wikipedia & 102K \\
-Natural Questions (NQ) &100K \\
-SQuAD2.0 &87K \\
-TriviaQA	&73K \\
-\hline
-\textbf{Total} &\textbf{1,170M} \\
-\hline
-\end{tabular}
-}
-\caption{Pre-training datasets for all-mpnet-base-v2 by SBERT}
-\label{tab:all-mpnet-base-v2}
-\end{table}
-
-\section{View of The Company's chatbot UI}
-\label{sec:wallyUIclip}
-
-\begin{figure*}[ht]
-  \includegraphics[width=\textwidth]{pic/wallyClip.PNG}
-  \centering
-  \caption{View of The Company's chatbot UI when the user needs to clarify a choice at a tree node with lower confidence.}
-\end{figure*}
-
-Figure 2 shows a view of The Company's chatbot user interface, providing an example of how using an intent tree can offer interpretability to end users. Here, after the user instructed the chatbot that the first answer was not good, the chatbot retries more carefully and asks the user to clarify the branching choice at nodes where the chatbot has low confidence. The choices we see in the option bubbles are the possible branches at that node. 
-
-The chatbot user interface is an custom web application built by The Company as the frontend for the chatbot NLP engine.
+%%
+%% The next two lines define the bibliography style to be used, and
+%% the bibliography file.
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{sample-base}
 
 
 \end{document}
